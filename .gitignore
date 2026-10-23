@@ -28,5 +28,9 @@ Desktop.ini
 *.bak
 *.cache
 
+output/*
 xml/*
 !.gitkeep
+
+__pycache__/
+.venv/

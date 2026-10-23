@@ -1,40 +1,21 @@
+import json
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any, List, Optional
 
-from pydantic import BaseModel
 from rich import print
 
-FILE: Path = Path("xml") / "Spitzer_et_al_2025.xml"
+from models import *
+
+FILE: Path = Path("xml") / "Kruijer_et_al_2022.xml"
+
+# Constants
+UNITS = ["mu", "epsilon"]
+
 
 data = []
 samples = []
-
-
-class Measurement(BaseModel):
-    type: str = "isotopic_ratio"
-    value: float
-    error: float
-    isotopic_ratio: str
-
-
-class Sample(BaseModel):
-    name: str
-    type: str
-    classification: str
-    warren_class: Optional[str] = None
-    parent_body: str
-    measurements: List[Measurement] = []
-
-
-class Publication(BaseModel):
-    name: str
-    doi: str
-    citation: str
-    standard: str
-    error_type: str
-    samples: List[Sample] = []
 
 
 def g(sample, name, tag1=None, tag2=None):
@@ -59,21 +40,39 @@ def main():
 
     for sample in data:
 
+        # Assuming that there's only one CRE data point.
+        cre_data = list(
+            filter(
+                lambda k: k[0] == "CRE",
+                sample.keys(),
+            )
+        )
+
+        if not cre_data:
+            cre = CRE()
+        else:
+            # This will give me tag1="..."
+            correction_type = cre_data[0][1]
+            cre = CRE(
+                correction=correction_type, value=g(sample, "CRE", correction_type)
+            )
+
         s = Sample(
             name=g(sample, "sample name"),
             type=g(sample, "Type"),
             warren_class=g(sample, "Warren class"),
             parent_body=g(sample, "Parent body"),
             classification=g(sample, "Classification"),
+            original_table=g(sample, "Original Table"),
+            cre=cre,
         )
 
         measurements = filter(
-            lambda k: k[0] in ["mu", "epsilon"] and k[2] in ["value", "error"],
+            lambda k: k[0] in UNITS and k[2] in ["value", "error"],
             sample.keys(),
         )
 
         unique_isotopes = set([m[1] for m in measurements])
-
         for iso in unique_isotopes:
             s.measurements.append(
                 Measurement(
@@ -86,7 +85,7 @@ def main():
         samples.append(s)
 
     pub = Publication(
-        name=g(data[0], "note", "W", "Title"),
+        title=g(data[0], "note", "W", "Title"),
         citation=g(data[0], "note", "W", "Citation"),
         doi=g(data[0], "note", "W", "DOI"),
         standard=g(data[0], "note", "W", "Standard"),
@@ -94,7 +93,12 @@ def main():
         samples=samples,
     )
 
-    print(pub.model_dump_json(indent=2))
+    json_pub = pub.model_dump_json(indent=None)
+
+    with open(f"output/{FILE.with_suffix('.json').name}", "w+") as f:
+        f.write(json_pub)
+
+    print(json_pub)
 
 
 if __name__ == "__main__":
