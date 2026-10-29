@@ -8,7 +8,8 @@ from rich import print
 
 from models import *
 
-FILE: Path = Path("xml") / "Kruijer_et_al_2022.xml"
+FILENAME: str = "Spitzer_et_al_2025.xml"
+FILE: Path = Path("xml") / FILENAME
 
 # Constants
 UNITS = ["mu", "epsilon"]
