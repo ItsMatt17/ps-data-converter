@@ -1,10 +1,9 @@
 # Planetary Science Data Converter
----
+
 This data converter was made for Rutgers Planetary Science Department to convert a numerous set of isotopic datasets from XML to JSON. 
 
 
 ## Installation
----
 
 ```bash
 $ git clone https://github.com/ItsMatt17/ps-data-converter
